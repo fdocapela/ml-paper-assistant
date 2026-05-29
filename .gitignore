@@ -1,0 +1,24 @@
+# Secret — never commit
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Docker pip cache — too large for GitHub, regenerate with: make cache
+pip_cache/
+
+# Database and data
+/data/
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/

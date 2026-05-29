@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Paper Assistant</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+<style>
+:root {
+  --bg: #f5f5f3;
+  --surface: #ffffff;
+  --border: rgba(0,0,0,0.08);
+  --border-md: rgba(0,0,0,0.14);
+  --border-strong: rgba(0,0,0,0.22);
+  --text: #1a1a1a;
+  --text-2: #555;
+  --text-3: #999;
+  --green: #1a7f4f;
+  --green-bg: #f0faf5;
+  --red: #c0392b;
+  --red-bg: #fef2f2;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.container { max-width: 680px; margin: 0 auto; padding: 0 1rem 5rem; }
+
+/* ── Hero ── */
+.hero { text-align: center; padding: 3.5rem 0 2rem; }
+.hero i { font-size: 38px; color: var(--text-3); display: block; margin-bottom: 1rem; }
+.hero h1 { font-size: 26px; font-weight: 500; margin-bottom: 0.4rem; }
+.hero p { font-size: 14px; color: var(--text-2); max-width: 360px; margin: 0 auto; line-height: 1.65; }
+
+/* ── Search bar ── */
+.search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: 28px;
+  padding: 8px 8px 8px 18px;
+  margin-bottom: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-box:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+.search-box input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-size: 15px; color: var(--text);
+}
+.search-box input::placeholder { color: var(--text-3); }
+#ask-btn {
+  background: var(--text); color: #fff;
+  border: none; border-radius: 22px;
+  padding: 8px 20px; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: opacity 0.15s; white-space: nowrap;
+}
+#ask-btn:hover { opacity: 0.82; }
+#ask-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Quick question chips ── */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 2.5rem; }
+.chip {
+  font-size: 12px; color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: 20px; padding: 5px 13px;
+  cursor: pointer; transition: all 0.15s;
+}
+.chip:hover { border-color: var(--border-strong); color: var(--text); }
+
+/* ── Section label ── */
+.sec-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.sec-label {
+  font-size: 11px; font-weight: 500; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+
+/* ── Papers grid ── */
+.papers { margin-bottom: 2.5rem; }
+.papers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 8px;
+}
+.paper-card {
+  background: var(--surface); border: 1px solid var(--border-md);
+  border-radius: var(--radius-sm); padding: 12px;
+  cursor: pointer; transition: all 0.15s;
+}
+.paper-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+}
+.paper-id { font-size: 10px; color: var(--text-3); font-family: monospace; margin-bottom: 4px; }
+.paper-name { font-size: 12px; line-height: 1.45; }
+.upload-tile {
+  background: transparent;
+  border: 1.5px dashed var(--border-md);
+  border-radius: var(--radius-sm); padding: 12px;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--text-3); font-size: 12px;
+}
+.upload-tile:hover { border-color: var(--border-strong); color: var(--text-2); }
+.upload-status {
+  font-size: 12px; margin-top: 8px; padding: 8px 12px;
+  border-radius: var(--radius-sm); display: none;
+  display: flex; align-items: center; gap: 6px;
+  visibility: hidden; height: 0; overflow: hidden;
+  transition: all 0.2s;
+}
+.upload-status.show { visibility: visible; height: auto; }
+.upload-status.success { background: var(--green-bg); color: var(--green); }
+.upload-status.error { background: var(--red-bg); color: var(--red); }
+.upload-status.loading { background: #f5f5f3; color: var(--text-2); }
+#file-input { display: none; }
+
+/* ── Answers section ── */
+.answers-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.clear-btn {
+  font-size: 11px; color: var(--text-3); background: none;
+  border: none; cursor: pointer; padding: 0;
+}
+.clear-btn:hover { color: var(--text); }
+
+/* ── Answer card ── */
+.answer-card {
+  background: var(--surface); border: 1px solid var(--border-md);
+  border-radius: var(--radius-lg); padding: 1.25rem 1.25rem 1rem;
+  margin-bottom: 1rem; scroll-margin-top: 1rem;
+}
+.answer-q {
+  font-size: 14px; font-weight: 500; margin-bottom: 14px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--border);
+  line-height: 1.5;
+}
+.answer-body { font-size: 14px; line-height: 1.8; color: var(--text); }
+.answer-body h1, .answer-body h2, .answer-body h3 {
+  font-size: 14px; font-weight: 500; margin: 1rem 0 0.4rem;
+}
+.answer-body p { margin-bottom: 0.75rem; }
+.answer-body p:last-child { margin-bottom: 0; }
+.answer-body ul, .answer-body ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+.answer-body li { margin-bottom: 0.3rem; }
+.answer-body strong { font-weight: 500; }
+.answer-body em { font-style: italic; }
+.answer-body code {
+  font-family: monospace; font-size: 12px;
+  background: #f2f2f0; padding: 2px 5px; border-radius: 4px;
+}
+.answer-body hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+.answer-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.answer-time { font-size: 11px; color: var(--text-3); }
+.copy-btn {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--text-2);
+  background: none; border: 1px solid var(--border-md);
+  border-radius: 6px; padding: 4px 10px; cursor: pointer;
+  transition: all 0.15s;
+}
+.copy-btn:hover { border-color: var(--border-strong); color: var(--text); }
+
+/* ── Loading dots ── */
+.loading {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--text-3);
+  padding: 0.5rem 0;
+}
+.dots { display: flex; gap: 4px; }
+.dot {
+  width: 5px; height: 5px; background: var(--text-3);
+  border-radius: 50%; animation: blink 1.2s infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100% { opacity: 0.25; } 40% { opacity: 1; } }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 1.5rem; left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1a1a1a; color: #fff;
+  border-radius: 8px; padding: 9px 18px;
+  font-size: 13px; opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 100;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <i class="ti ti-brain" aria-hidden="true"></i>
+    <h1>ML Paper Assistant</h1>
+    <p>Faça perguntas sobre cinco papers fundamentais de machine learning.</p>
+  </div>
+
+  <!-- Search -->
+  <div class="search-box">
+    <input type="text" id="q-input"
+           placeholder="Faça uma pergunta sobre os papers…"
+           autocomplete="off" />
+    <button id="ask-btn" onclick="ask()">Perguntar</button>
+  </div>
+
+  <!-- Quick questions -->
+  <div class="chips" id="chips"></div>
+
+  <!-- Papers -->
+  <div class="papers">
+    <div class="sec-hdr">
+      <span class="sec-label">Papers</span>
+    </div>
+    <div class="papers-grid" id="papers-grid">
+      <label class="upload-tile" for="file-input" title="Enviar um novo paper em PDF">
+        <i class="ti ti-file-plus" style="font-size:18px" aria-hidden="true"></i>
+        <span>Enviar paper (PDF)</span>
+      </label>
+    </div>
+    <div class="upload-status" id="upload-status"></div>
+    <input type="file" id="file-input" accept=".pdf" onchange="uploadPaper(this)">
+  </div>
+
+  <!-- Answers -->
+  <div id="answers-section"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8000';
+
+const QUESTIONS = [
+  "Qual é o mecanismo central proposto no paper Attention Is All You Need e como ele se diferencia de RNNs?",
+  "Como o RAG combina recuperação e geração? Quais são suas limitações apontadas pelos autores?",
+  "Compare a abordagem do ReAct com a do Toolformer para uso de ferramentas em LLMs.",
+  "Qual paper você considera mais relevante para construir um agente com uso de ferramentas externas? Justifique com base nos textos.",
+  "Faça um resumo executivo dos 5 papers em no máximo 5 bullet points cada."
+];
+
+const Q_SHORT = [
+  "Mecanismo do Transformer",
+  "Como funciona o RAG",
+  "ReAct vs Toolformer",
+  "Melhor paper para agentes",
+  "Resumo dos 5 papers"
+];
+
+const PAPERS = [
+  { id: "1706.03762", title: "Attention Is All You Need" },
+  { id: "1810.04805", title: "BERT: Pre-training of Deep Bidirectional Transformers" },
+  { id: "2005.11401", title: "Retrieval-Augmented Generation" },
+  { id: "2210.03629", title: "ReAct: Synergizing Reasoning and Acting" },
+  { id: "2302.04761", title: "Toolformer: Language Models Can Teach Themselves to Use Tools" },
+];
+
+let answerCount = 0;
+
+// ── Build quick question chips ──────────────────────────────────────────────
+const chipsEl = document.getElementById('chips');
+QUESTIONS.forEach((q, i) => {
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.textContent = Q_SHORT[i];
+  b.title = q;
+  b.onclick = () => { document.getElementById('q-input').value = q; ask(); };
+  chipsEl.appendChild(b);
+});
+
+// ── Build papers grid ───────────────────────────────────────────────────────
+const grid = document.getElementById('papers-grid');
+const uploadTile = grid.querySelector('.upload-tile');
+PAPERS.forEach(p => {
+  const card = document.createElement('div');
+  card.className = 'paper-card';
+  card.innerHTML = `<div class="paper-id">${p.id}</div><div class="paper-name">${p.title}</div>`;
+  card.title = `Resumir: ${p.title}`;
+  card.onclick = () => {
+    document.getElementById('q-input').value =
+      `Faça um resumo do paper "${p.title}" (arXiv ${p.id})`;
+    ask();
+  };
+  grid.insertBefore(card, uploadTile);
+});
+
+// ── Enter key ───────────────────────────────────────────────────────────────
+document.getElementById('q-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') ask();
+});
+
+// ── Toast helper ────────────────────────────────────────────────────────────
+function toast(msg, duration = 4000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+// ── Escape HTML ─────────────────────────────────────────────────────────────
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Ensure answers header exists ────────────────────────────────────────────
+function ensureHeader() {
+  if (document.getElementById('answers-hdr')) return;
+  const hdr = document.createElement('div');
+  hdr.className = 'answers-hdr';
+  hdr.id = 'answers-hdr';
+  hdr.innerHTML = `
+    <span class="sec-label">Respostas</span>
+    <button class="clear-btn" onclick="clearAnswers()">Limpar tudo</button>
+  `;
+  document.getElementById('answers-section').appendChild(hdr);
+}
+
+// ── Add paper card from upload ───────────────────────────────────────────────
+function addPaperCard(title, idLabel) {
+  const card = document.createElement('div');
+  card.className = 'paper-card';
+  card.innerHTML = `<div class="paper-id">${idLabel}</div><div class="paper-name">${esc(title)}</div>`;
+  card.onclick = () => {
+    document.getElementById('q-input').value = `Faça um resumo do paper "${title}"`;
+    ask();
+  };
+  grid.insertBefore(card, uploadTile);
+}
+
+// ── Ask ─────────────────────────────────────────────────────────────────────
+async function ask() {
+  const input = document.getElementById('q-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const btn = document.getElementById('ask-btn');
+  btn.disabled = true;
+  input.value = '';
+
+  const id = `answer-${++answerCount}`;
+  const t0 = Date.now();
+
+  ensureHeader();
+
+  // Insert card after header
+  const card = document.createElement('div');
+  card.className = 'answer-card';
+  card.id = id;
+  card.innerHTML = `
+    <div class="answer-q">${esc(question)}</div>
+    <div class="loading" id="ld-${id}">
+      <div class="dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <span>Gerando resposta…</span>
+    </div>
+  `;
+
+  const hdr = document.getElementById('answers-hdr');
+  hdr.after(card);
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const tResp = await fetch(`${API}/threads`, { method: 'POST' });
+    if (!tResp.ok) throw new Error(`Não foi possível criar thread (${tResp.status})`);
+    const { thread_id } = await tResp.json();
+
+    const mResp = await fetch(`${API}/threads/${thread_id}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: question })
+    });
+    if (!mResp.ok) throw new Error(`Erro da API (${mResp.status})`);
+    const { response } = await mResp.json();
+
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    const bodyHtml = marked.parse(response);
+
+    card.innerHTML = `
+      <div class="answer-q">${esc(question)}</div>
+      <div class="answer-body">${bodyHtml}</div>
+      <div class="answer-footer">
+        <span class="answer-time">${elapsed}s</span>
+        <button class="copy-btn" onclick="copyText(this, \`${response.replace(/`/g,'\\`')}\`)">
+          <i class="ti ti-copy" style="font-size:13px" aria-hidden="true"></i> Copiar
+        </button>
+      </div>
+    `;
+
+  } catch (err) {
+    card.innerHTML = `
+      <div class="answer-q">${esc(question)}</div>
+      <div style="font-size:13px;color:var(--red);padding:0.5rem 0;display:flex;align-items:center;gap:6px;">
+        <i class="ti ti-alert-circle" style="font-size:16px" aria-hidden="true"></i>
+        ${esc(err.message)}. Verifique se os containers estão rodando com <code>docker compose up -d</code>.
+      </div>
+    `;
+    toast('API indisponível. Inicie com: make setup');
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+// ── Copy to clipboard ────────────────────────────────────────────────────────
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.innerHTML = '<i class="ti ti-check" style="font-size:13px" aria-hidden="true"></i> Copiado!';
+    setTimeout(() => {
+      btn.innerHTML = '<i class="ti ti-copy" style="font-size:13px" aria-hidden="true"></i> Copiar';
+    }, 2000);
+  }).catch(() => toast('Não foi possível copiar.'));
+}
+
+// ── Clear all answers ────────────────────────────────────────────────────────
+function clearAnswers() {
+  document.getElementById('answers-section').innerHTML = '';
+  answerCount = 0;
+}
+
+// ── Upload PDF ───────────────────────────────────────────────────────────────
+async function uploadPaper(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const status = document.getElementById('upload-status');
+  status.className = 'upload-status loading show';
+  status.innerHTML = `
+    <div class="dots" style="display:flex;gap:4px">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    Enviando ${esc(file.name)}…
+  `;
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const resp = await fetch(`${API}/papers/upload`, { method: 'POST', body: fd });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
+    }
+    const result = await resp.json();
+    status.className = 'upload-status success show';
+    status.innerHTML = `
+      <i class="ti ti-check" aria-hidden="true"></i>
+      "${esc(result.title)}" adicionado — ${result.chunks} chunks indexados.
+    `;
+    addPaperCard(result.title, 'enviado');
+    setTimeout(() => { status.className = 'upload-status'; }, 6000);
+  } catch (err) {
+    status.className = 'upload-status error show';
+    status.innerHTML = `
+      <i class="ti ti-alert-circle" aria-hidden="true"></i>
+      Erro: ${esc(err.message)}
+    `;
+  }
+
+  input.value = '';
+}
+</script>
+</body>
+</html>
